@@ -43,9 +43,16 @@ function initSchema(db: Database.Database): void {
       status TEXT NOT NULL DEFAULT 'pending',
       message TEXT,
       published_at TEXT,
-      simulated_url TEXT,
+      simulated INTEGER NOT NULL DEFAULT 1,
+      url TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (content_id) REFERENCES contents(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS platform_credentials (
+      platform_id TEXT PRIMARY KEY,
+      credentials_json TEXT NOT NULL DEFAULT '{}',
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
 }
@@ -122,7 +129,8 @@ export interface PublishRecordRow {
   status: string;
   message: string | null;
   published_at: string | null;
-  simulated_url: string | null;
+  simulated: number;
+  url: string | null;
   created_at: string;
 }
 
@@ -134,12 +142,13 @@ export function savePublishRecord(record: {
   status: string;
   message: string;
   publishedAt: string;
-  simulatedUrl?: string;
+  simulated?: boolean;
+  url?: string;
 }): void {
   const d = getDb();
   d.prepare(`
-    INSERT INTO publish_records (id, content_id, platform_id, platform_name, status, message, published_at, simulated_url)
-    VALUES (@id, @contentId, @platformId, @platformName, @status, @message, @publishedAt, @simulatedUrl)
+    INSERT INTO publish_records (id, content_id, platform_id, platform_name, status, message, published_at, simulated, url)
+    VALUES (@id, @contentId, @platformId, @platformName, @status, @message, @publishedAt, @simulated, @url)
   `).run({
     id: record.id,
     contentId: record.contentId,
@@ -148,8 +157,39 @@ export function savePublishRecord(record: {
     status: record.status,
     message: record.message,
     publishedAt: record.publishedAt,
-    simulatedUrl: record.simulatedUrl || null,
+    simulated: record.simulated ? 1 : 0,
+    url: record.url || null,
   });
+}
+
+// ============================================================
+// Platform Credentials
+// ============================================================
+
+export function saveCredentials(platformId: string, credentials: Record<string, string>): void {
+  const d = getDb();
+  d.prepare(`
+    INSERT INTO platform_credentials (platform_id, credentials_json)
+    VALUES (@platformId, @json)
+    ON CONFLICT(platform_id) DO UPDATE SET
+      credentials_json = @json,
+      updated_at = datetime('now')
+  `).run({
+    platformId,
+    json: JSON.stringify(credentials),
+  });
+}
+
+export function getCredentials(platformId: string): Record<string, string> | null {
+  const d = getDb();
+  const row = d.prepare('SELECT credentials_json FROM platform_credentials WHERE platform_id = ?').get(platformId) as { credentials_json: string } | undefined;
+  if (!row) return null;
+  return JSON.parse(row.credentials_json);
+}
+
+export function deleteCredentials(platformId: string): void {
+  const d = getDb();
+  d.prepare('DELETE FROM platform_credentials WHERE platform_id = ?').run(platformId);
 }
 
 export function listPublishRecords(): PublishRecordRow[] {

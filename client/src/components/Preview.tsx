@@ -13,23 +13,24 @@ export function Preview({ contents, validations }: Props) {
     <div className="preview">
       <h2>预览</h2>
       <div className="preview-tabs">
-        {contents.map((c, i) => {
+        {contents.map((c) => {
           const validation = validations.find(v => v.platformId === c.platformId);
           const warnings = validation?.result.warnings || [];
 
           return (
-            <details key={c.platformId} className="preview-panel">
+            <details key={c.platformId} className="preview-panel" open>
               <summary>
+                <span className="platform-dot" />
                 {c.platformName}
                 {warnings.length > 0 && (
-                  <span className="warning-badge">{warnings.length}</span>
+                  <span className="warning-badge">{warnings.length} 个提醒</span>
                 )}
               </summary>
 
               {warnings.length > 0 && (
                 <div className="warnings">
                   {warnings.map((w, j) => (
-                    <div key={j} className="warning-item">⚠ {w.message}</div>
+                    <div key={j} className="warning-item">{w.message}</div>
                   ))}
                 </div>
               )}
@@ -54,12 +55,6 @@ export function Preview({ contents, validations }: Props) {
                   ))}
                 </div>
               )}
-
-              <div className="preview-meta">
-                {c.metadata && Object.entries(c.metadata).map(([k, v]) => (
-                  <span key={k} className="meta-item">{k}: {String(v)}</span>
-                ))}
-              </div>
             </details>
           );
         })}

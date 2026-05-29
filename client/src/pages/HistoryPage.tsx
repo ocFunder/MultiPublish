@@ -26,16 +26,22 @@ export function HistoryPage({ onBack }: Props) {
           <thead>
             <tr>
               <th>平台</th>
+              <th>模式</th>
               <th>状态</th>
               <th>消息</th>
               <th>发布时间</th>
-              <th>模拟链接</th>
+              <th>链接</th>
             </tr>
           </thead>
           <tbody>
             {records.map(r => (
               <tr key={r.id}>
                 <td>{r.platformName}</td>
+                <td>
+                  <span className={`mode-badge ${r.simulated ? 'simulated' : 'real'}`}>
+                    {r.simulated ? '模拟' : '真实'}
+                  </span>
+                </td>
                 <td>
                   <span className={`status-badge ${r.status}`}>
                     {r.status === 'success' ? '成功' : r.status === 'failed' ? '失败' : r.status}
@@ -44,8 +50,8 @@ export function HistoryPage({ onBack }: Props) {
                 <td className="msg-cell">{r.message}</td>
                 <td>{new Date(r.publishedAt).toLocaleString('zh-CN')}</td>
                 <td>
-                  {r.simulatedUrl && (
-                    <a href={r.simulatedUrl} target="_blank" rel="noreferrer">查看</a>
+                  {r.url && (
+                    <a href={r.url} target="_blank" rel="noreferrer">查看</a>
                   )}
                 </td>
               </tr>

@@ -43,12 +43,6 @@ export interface ValidationResult {
   };
 }
 
-export interface PublishSummary {
-  total: number;
-  success: number;
-  failed: number;
-}
-
 export interface PublishRecord {
   id: string;
   contentId: string;
@@ -57,8 +51,17 @@ export interface PublishRecord {
   status: string;
   message: string;
   publishedAt: string;
-  simulatedUrl: string;
+  simulated: boolean;
+  url?: string;
   createdAt: string;
+}
+
+export interface CredentialStatus {
+  platformId: string;
+  displayName: string;
+  supportsRealPublish: boolean;
+  configured: boolean;
+  keys: string[];
 }
 
 // --- API functions ---
@@ -102,5 +105,28 @@ export async function fetchHistory(): Promise<PublishRecord[]> {
 
 export async function fetchContents(): Promise<UnifiedContent[]> {
   const res = await fetch(`${BASE_URL}/content`);
+  return res.json();
+}
+
+// --- Credentials ---
+
+export async function fetchCredentials(): Promise<CredentialStatus[]> {
+  const res = await fetch(`${BASE_URL}/credentials`);
+  return res.json();
+}
+
+export async function saveCredentials(platformId: string, credentials: Record<string, string>) {
+  const res = await fetch(`${BASE_URL}/credentials/${platformId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credentials }),
+  });
+  return res.json();
+}
+
+export async function deleteCredentials(platformId: string) {
+  const res = await fetch(`${BASE_URL}/credentials/${platformId}`, {
+    method: 'DELETE',
+  });
   return res.json();
 }

@@ -3,11 +3,12 @@ import { UnifiedContent, PlatformContent, PublishResult, PlatformRules } from '.
 
 /**
  * 小红书适配器
- * 特性：图片优先(1-9张)、短文案≤1000字、话题标签 #、标题≤20字
+ * 小红书目前无公开内容发布 API，仅支持模拟发布
  */
 export class XiaohongshuAdapter extends BaseAdapter {
   readonly platformId = 'xiaohongshu';
   readonly displayName = '小红书';
+  readonly supportsRealPublish = false;
   readonly contentRules: PlatformRules = {
     maxTitleLength: 20,
     maxBodyLength: 1000,
@@ -40,9 +41,7 @@ export class XiaohongshuAdapter extends BaseAdapter {
     return this.simulatePublish(content);
   }
 
-  /** 将 Markdown 转换为小红书纯文本 + 话题标签 */
   private toXiaohongshuText(markdown: string, tags: string[]): string {
-    // 去掉 Markdown 标记，保留纯文本
     let text = markdown
       .replace(/^#{1,3} (.+)$/gm, '【$1】')
       .replace(/\*\*(.+?)\*\*/g, '$1')
@@ -57,12 +56,10 @@ export class XiaohongshuAdapter extends BaseAdapter {
       .replace(/\n{3,}/g, '\n\n')
       .trim();
 
-    // 截断正文
     if (text.length > this.contentRules.maxBodyLength) {
       text = text.substring(0, this.contentRules.maxBodyLength - 5) + '...';
     }
 
-    // 追加话题标签
     const hashtags = this.extractHashtags(tags);
     if (hashtags.length > 0) {
       text += '\n\n' + hashtags.join(' ');
@@ -71,26 +68,7 @@ export class XiaohongshuAdapter extends BaseAdapter {
     return text;
   }
 
-  /** 生成话题标签 */
   private extractHashtags(tags: string[]): string[] {
-    return tags
-      .map(t => t.startsWith('#') ? t : `#${t}`)
-      .slice(0, 10);
-  }
-
-  private async simulatePublish(content: PlatformContent): Promise<PublishResult> {
-    await this.delay();
-    return {
-      platformId: this.platformId,
-      platformName: this.displayName,
-      status: 'success',
-      publishedAt: new Date().toISOString(),
-      message: '模拟发布成功（小红书）',
-      simulatedUrl: this.mockUrl(),
-    };
-  }
-
-  private delay(ms = 300): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return tags.map(t => t.startsWith('#') ? t : `#${t}`).slice(0, 10);
   }
 }

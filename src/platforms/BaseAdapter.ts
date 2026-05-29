@@ -2,20 +2,19 @@ import { IPlatformAdapter, UnifiedContent, PlatformContent, ValidationResult, Pu
 
 /**
  * 平台适配器抽象基类
- * 提供通用的转换、验证和发布逻辑，子类只需实现平台特定的部分
+ * 提供通用的转换、验证和模拟发布逻辑
  */
 export abstract class BaseAdapter implements IPlatformAdapter {
   abstract readonly platformId: string;
   abstract readonly displayName: string;
   abstract readonly contentRules: PlatformRules;
 
-  /** 子类必须实现：平台特定的内容转换 */
+  /** 是否支持真实 API 发布 */
+  abstract readonly supportsRealPublish: boolean;
+
   abstract transform(content: UnifiedContent): PlatformContent;
+  abstract publish(content: PlatformContent, credentials?: Record<string, string>): Promise<PublishResult>;
 
-  /** 子类必须实现：平台特定的发布逻辑 */
-  abstract publish(content: PlatformContent): Promise<PublishResult>;
-
-  /** 通用验证逻辑，子类可覆盖以添加平台特定规则 */
   validate(content: UnifiedContent): ValidationResult {
     const errors: ValidationResult['errors'] = [];
     const warnings: ValidationResult['warnings'] = [];
@@ -56,20 +55,31 @@ export abstract class BaseAdapter implements IPlatformAdapter {
     return { valid: errors.length === 0, errors, warnings };
   }
 
-  /** 默认标题截断 */
   protected truncateTitle(title: string): string {
     if (title.length <= this.contentRules.maxTitleLength) return title;
     return title.substring(0, this.contentRules.maxTitleLength);
   }
 
-  /** 默认正文截断 */
   protected truncateBody(body: string): string {
     if (body.length <= this.contentRules.maxBodyLength) return body;
     return body.substring(0, this.contentRules.maxBodyLength) + '\n\n...(内容已截断)';
   }
 
-  /** 生成模拟发布 URL */
-  protected mockUrl(): string {
-    return `https://mock.publish/${this.platformId}/${Date.now()}`;
+  /** 模拟发布（所有平台可用作兜底） */
+  protected async simulatePublish(content: PlatformContent): Promise<PublishResult> {
+    await this.delay();
+    return {
+      platformId: this.platformId,
+      platformName: this.displayName,
+      status: 'success',
+      publishedAt: new Date().toISOString(),
+      message: `模拟发布成功（${this.displayName}）`,
+      simulated: true,
+      url: `https://mock.publish/${this.platformId}/${Date.now()}`,
+    };
+  }
+
+  private delay(ms = 300): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }

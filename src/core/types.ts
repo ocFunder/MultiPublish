@@ -74,7 +74,10 @@ export interface PublishResult {
   status: PublishStatus;
   publishedAt: string;
   message: string;
-  simulatedUrl?: string;
+  /** 是否为模拟发布 */
+  simulated: boolean;
+  /** 真实发布后的 URL 或模拟 URL */
+  url?: string;
 }
 
 /** 批量发布请求 */
@@ -95,6 +98,23 @@ export interface PublishResponse {
 }
 
 // ============================================================
+// 平台凭证
+// ============================================================
+
+/** 平台凭证 */
+export interface PlatformCredentials {
+  platformId: string;
+  credentials: Record<string, string>;
+  configured: boolean;
+}
+
+/** 微信公众号凭证 */
+export interface WeChatCredentials {
+  appId: string;
+  appSecret: string;
+}
+
+// ============================================================
 // 平台适配器接口 (Strategy Pattern)
 // ============================================================
 
@@ -110,6 +130,9 @@ export interface IPlatformAdapter {
   /** 验证内容是否符合平台要求 */
   validate(content: UnifiedContent): ValidationResult;
 
-  /** 发布内容到平台 */
-  publish(content: PlatformContent): Promise<PublishResult>;
+  /** 发布内容到平台（有凭证则真实发布，无凭证则模拟） */
+  publish(content: PlatformContent, credentials?: Record<string, string>): Promise<PublishResult>;
+
+  /** 是否有真实 API 支持 */
+  readonly supportsRealPublish: boolean;
 }

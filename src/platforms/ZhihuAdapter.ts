@@ -3,14 +3,15 @@ import { UnifiedContent, PlatformContent, PublishResult, PlatformRules } from '.
 
 /**
  * 知乎适配器
- * 特性：支持 Markdown + LaTeX 公式、标题≤50字
+ * 知乎无公开内容发布 API，仅支持模拟发布
  */
 export class ZhihuAdapter extends BaseAdapter {
   readonly platformId = 'zhihu';
   readonly displayName = '知乎';
+  readonly supportsRealPublish = false;
   readonly contentRules: PlatformRules = {
     maxTitleLength: 50,
-    maxBodyLength: 100000, // 知乎无硬限制，设置较大值
+    maxBodyLength: 100000,
     maxImages: 20,
     requiresCoverImage: false,
     supportsMarkdown: true,
@@ -39,27 +40,7 @@ export class ZhihuAdapter extends BaseAdapter {
     return this.simulatePublish(content);
   }
 
-  /** 知乎保留 Markdown 格式，保护 LaTeX 公式 */
   private toZhihuMarkdown(markdown: string): string {
-    const truncated = this.truncateBody(markdown);
-    return truncated
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-  }
-
-  private async simulatePublish(content: PlatformContent): Promise<PublishResult> {
-    await this.delay();
-    return {
-      platformId: this.platformId,
-      platformName: this.displayName,
-      status: 'success',
-      publishedAt: new Date().toISOString(),
-      message: '模拟发布成功（知乎）',
-      simulatedUrl: this.mockUrl(),
-    };
-  }
-
-  private delay(ms = 300): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return this.truncateBody(markdown).replace(/\n{3,}/g, '\n\n').trim();
   }
 }

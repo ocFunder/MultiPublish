@@ -3,11 +3,13 @@ import { UnifiedContent, PlatformContent, PublishResult, PlatformRules } from '.
 
 /**
  * B站专栏适配器
- * 特性：专栏富文本格式、封面图必须、标签/分类系统、标题≤80字
+ * B站开放平台 (openhome.bilibili.com) 支持专栏发布，但需开发者申请
+ * 当前默认模拟发布，配置凭证后可接入真实 API
  */
 export class BilibiliAdapter extends BaseAdapter {
   readonly platformId = 'bilibili';
   readonly displayName = 'B站';
+  readonly supportsRealPublish = true;
   readonly contentRules: PlatformRules = {
     maxTitleLength: 80,
     maxBodyLength: 50000,
@@ -36,11 +38,58 @@ export class BilibiliAdapter extends BaseAdapter {
     };
   }
 
-  async publish(content: PlatformContent): Promise<PublishResult> {
+  async publish(content: PlatformContent, credentials?: Record<string, string>): Promise<PublishResult> {
+    // B站开放平台需要在 openhome.bilibili.com 注册应用获取 access_token
+    // 如果提供了 access_token 则尝试真实发布
+    if (credentials?.accessToken) {
+      return this.realPublish(content, credentials.accessToken);
+    }
     return this.simulatePublish(content);
   }
 
-  /** 将 Markdown 转换为 B站专栏格式 */
+  private async realPublish(content: PlatformContent, accessToken: string): Promise<PublishResult> {
+    try {
+      const res = await fetch('https://member.bilibili.com/x/v2/article/publish', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          title: content.title,
+          content: content.body,
+          category: content.metadata?.category || 0,
+          tags: content.tags.join(','),
+          cover: content.coverImage || '',
+        }),
+      });
+      const data = await res.json() as Record<string, unknown>;
+      if ((data as { code?: number }).code !== 0) {
+        throw new Error(`B站返回错误: ${data.message || JSON.stringify(data)}`);
+      }
+
+      return {
+        platformId: this.platformId,
+        platformName: this.displayName,
+        status: 'success',
+        publishedAt: new Date().toISOString(),
+        message: '已成功发布到B站专栏',
+        simulated: false,
+        url: `https://www.bilibili.com/read/cv${data.data}`,
+      };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : '未知错误';
+      return {
+        platformId: this.platformId,
+        platformName: this.displayName,
+        status: 'failed',
+        publishedAt: new Date().toISOString(),
+        message: `B站发布失败: ${msg}`,
+        simulated: false,
+      };
+    }
+  }
+
   private toBilibiliFormat(markdown: string): string {
     const truncated = this.truncateBody(markdown);
     return truncated
@@ -64,24 +113,7 @@ export class BilibiliAdapter extends BaseAdapter {
       .join('\n');
   }
 
-  /** 格式化标签 */
   private formatTags(tags: string[]): string[] {
     return tags.map(t => t.replace(/^#/, '')).slice(0, 10);
-  }
-
-  private async simulatePublish(content: PlatformContent): Promise<PublishResult> {
-    await this.delay();
-    return {
-      platformId: this.platformId,
-      platformName: this.displayName,
-      status: 'success',
-      publishedAt: new Date().toISOString(),
-      message: '模拟发布成功（B站专栏）',
-      simulatedUrl: this.mockUrl(),
-    };
-  }
-
-  private delay(ms = 300): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }

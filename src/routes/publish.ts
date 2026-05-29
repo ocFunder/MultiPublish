@@ -88,7 +88,8 @@ export function createPublishRouter(
       status: r.status,
       message: r.message,
       publishedAt: r.published_at,
-      simulatedUrl: r.simulated_url,
+      simulated: r.simulated === 1,
+      url: r.url,
       createdAt: r.created_at,
     })));
   });
