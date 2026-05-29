@@ -3,4 +3,5 @@ dist/
 .env
 *.db
 *.sqlite
+data/
 .DS_Store
