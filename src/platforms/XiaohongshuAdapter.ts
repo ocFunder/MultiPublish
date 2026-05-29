@@ -69,6 +69,11 @@ export class XiaohongshuAdapter extends BaseAdapter {
   }
 
   private extractHashtags(tags: string[]): string[] {
-    return tags.map(t => t.startsWith('#') ? t : `#${t}`).slice(0, 10);
+    return tags
+      .flatMap(t => t.split(/[,，]/))
+      .map(t => t.trim())
+      .filter(t => t.length > 0)
+      .map(t => t.startsWith('#') ? t : `#${t}`)
+      .slice(0, 10);
   }
 }

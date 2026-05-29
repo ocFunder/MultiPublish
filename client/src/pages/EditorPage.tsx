@@ -46,7 +46,7 @@ export function EditorPage({ onViewHistory, onViewSettings }: Props) {
     clearTimeout(debounceRef.current);
 
     debounceRef.current = setTimeout(async () => {
-      const tagList = tags.split(',').map(t => t.trim()).filter(Boolean);
+      const tagList = tags.split(/[,，]/).map(t => t.trim()).filter(Boolean);
       try {
         const result = await transformContent(
           { title, body, coverImage: coverImage || undefined, images: [], tags: tagList, category: category || undefined },
@@ -75,7 +75,7 @@ export function EditorPage({ onViewHistory, onViewSettings }: Props) {
     if (selectedPlatforms.length === 0) return;
     setPublishing(true);
 
-    const tagList = tags.split(',').map(t => t.trim()).filter(Boolean);
+    const tagList = tags.split(/[,，]/).map(t => t.trim()).filter(Boolean);
     try {
       const saved = await saveContent({
         title, body, coverImage: coverImage || undefined,

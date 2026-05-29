@@ -41,6 +41,11 @@ export class ZhihuAdapter extends BaseAdapter {
   }
 
   private toZhihuMarkdown(markdown: string): string {
-    return this.truncateBody(markdown).replace(/\n{3,}/g, '\n\n').trim();
+    return this.truncateBody(markdown)
+      .replace(/\n{3,}/g, '\n\n')                // 压缩多余空行
+      .replace(/\n(#{1,3}\s)/g, '\n\n$1')        // 标题前确保有空行
+      .replace(/^#{1,3}\s/gm, m => `\n\n${m}`)   // 全文首个标题前加空行
+      .replace(/^\n+/, '')                        // 清理开头多余空行
+      .trim();
   }
 }
